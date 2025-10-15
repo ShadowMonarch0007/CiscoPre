@@ -1,26 +1,26 @@
-import { useState } from "react"
-import { createGroup, openGroup } from "../api/client"
+import { useState } from "react";
+import { createGroup, openGroup } from "../api/client";
 
 export default function Home({ onEnterGroup }) {
   // create flow
-  const [name, setName] = useState("Trip to Goa")
-  const [createPass, setCreatePass] = useState("") // optional
+  const [name, setName] = useState("Trip to Goa");
+  const [createPass, setCreatePass] = useState(""); // optional
 
   // open flow
-  const [openName, setOpenName] = useState("")
-  const [openPass, setOpenPass] = useState("")
+  const [openName, setOpenName] = useState("");
+  const [openPass, setOpenPass] = useState("");
 
   async function handleCreate(e) {
-    e.preventDefault()
-    const group = await createGroup(name, createPass || undefined)
-    onEnterGroup(group._id)
+    e.preventDefault();
+    const group = await createGroup(name, createPass || undefined);
+    onEnterGroup(group._id);
   }
 
   async function handleOpen(e) {
-    e.preventDefault()
-    if (!openName.trim()) return
-    const group = await openGroup(openName.trim(), openPass || undefined)
-    onEnterGroup(group._id)
+    e.preventDefault();
+    if (!openName.trim()) return;
+    const group = await openGroup(openName.trim(), openPass || undefined);
+    onEnterGroup(group._id);
   }
 
   return (
@@ -30,16 +30,18 @@ export default function Home({ onEnterGroup }) {
         <input
           className="input w-full"
           value={name}
-          onChange={e=>setName(e.target.value)}
+          onChange={(e) => setName(e.target.value)}
           placeholder="Group name"
         />
         <input
           className="input w-full"
           value={createPass}
-          onChange={e=>setCreatePass(e.target.value)}
+          onChange={(e) => setCreatePass(e.target.value)}
           placeholder="(Optional) Passphrase"
         />
-        <button className="btn btn-primary" type="submit">Create group</button>
+        <button className="btn btn-primary" type="submit">
+          Create group
+        </button>
         <div className="text-xs text-neutral-500">
           Tip: Add a passphrase if you want only invited folks to open this group.
         </div>
@@ -50,20 +52,22 @@ export default function Home({ onEnterGroup }) {
         <input
           className="input w-full"
           value={openName}
-          onChange={e=>setOpenName(e.target.value)}
+          onChange={(e) => setOpenName(e.target.value)}
           placeholder="Group name"
         />
         <input
           className="input w-full"
           value={openPass}
-          onChange={e=>setOpenPass(e.target.value)}
+          onChange={(e) => setOpenPass(e.target.value)}
           placeholder="Passphrase (if set)"
         />
-        <button className="btn btn-secondary" type="submit">Open</button>
+        <button className="btn btn-secondary" type="submit">
+          Open
+        </button>
         <div className="text-xs text-neutral-500">
           Case-insensitive name. If group has a passphrase, you must enter it.
         </div>
       </form>
     </div>
-  )
+  );
 }

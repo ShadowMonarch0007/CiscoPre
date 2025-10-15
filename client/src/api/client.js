@@ -24,3 +24,4 @@ export const addExpense = (id, payload) =>
   http(`/api/groups/${id}/expenses`, { method: "POST", body: JSON.stringify(payload) });
 export const getSummary = (id) => http(`/api/groups/${id}/summary`);
 export const getSettlements = (id) => http(`/api/groups/${id}/settlements`);
+export const getLogs = (id) => http(`/api/groups/${id}/logs`);
