@@ -25,3 +25,4 @@ export const addExpense = (id, payload) =>
 export const getSummary = (id) => http(`/api/groups/${id}/summary`);
 export const getSettlements = (id) => http(`/api/groups/${id}/settlements`);
 export const getLogs = (id) => http(`/api/groups/${id}/logs`);
+export const getExpenses = (id) => http(`/api/groups/${id}/expenses`);

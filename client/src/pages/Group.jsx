@@ -5,7 +5,8 @@ import {
   addExpense,
   getSummary,
   getSettlements,
-  getLogs
+  getLogs,
+  getExpenses,
 } from "../api/client";
 import MembersCard from "../components/MembersCard.jsx";
 import AddMemberForm from "../components/AddMemberForm.jsx";
@@ -13,6 +14,7 @@ import AddExpenseForm from "../components/AddExpenseForm.jsx";
 import SummaryCard from "../components/SummaryCard.jsx";
 import SettlementsCard from "../components/SettlementsCard.jsx";
 import LogsCard from "../components/LogsCard.jsx";
+import ExpensesCard from "../components/ExpensesCard.jsx";
 
 export default function Group({ groupId, onBack }) {
   const [group, setGroup] = useState(null);
@@ -20,6 +22,7 @@ export default function Group({ groupId, onBack }) {
   const [settlements, setSettlements] = useState([]);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expenses, setExpenses] = useState([]);
 
   async function refresh() {
     setLoading(true);
@@ -37,6 +40,13 @@ export default function Group({ groupId, onBack }) {
   useEffect(() => {
     refresh();
   }, [groupId]);
+
+  useEffect(() => {
+    getExpenses(groupId)
+      .then((data) => setExpenses(data.expenses || []))
+      .catch(console.error);
+  }, [groupId]);
+
 
   async function handleAddMember(name) {
     await addMember(groupId, name);
@@ -78,6 +88,7 @@ export default function Group({ groupId, onBack }) {
           <div className="space-y-4">
             <SummaryCard members={group.members || []} summary={summary} />
             <SettlementsCard settlements={settlements} membersMap={membersMap} />
+            <ExpensesCard expenses={expenses} membersMap={membersMap} />
           </div>
         </div>
       )}

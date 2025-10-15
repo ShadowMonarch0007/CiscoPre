@@ -175,6 +175,16 @@ export async function getSummary(req, res, next) {
   }
 }
 
+export async function getExpenses(req, res, next) {
+  try {
+    const group = await Group.findById(req.params.id);
+    if (!group) return res.status(404).json({ error: "Group not found" });
+    res.json({ expenses: group.expenses });
+  } catch (e) {
+    next(e);
+  }
+}
+
 /** GET /api/groups/:id/settlements */
 export async function getSettlements(req, res, next) {
   try {

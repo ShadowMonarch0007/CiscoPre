@@ -9,7 +9,8 @@ import {
   addExpense,
   getSummary,
   getSettlements,
-  getLogs
+  getLogs,
+  getExpenses
 } from "../controllers/groupControllers.js";
 
 const router = Router();
@@ -58,6 +59,7 @@ router.post("/:id/members", validate(addMemberSchema), addMember);
 router.post("/:id/expenses", validate(addExpenseSchema), addExpense);
 router.get("/:id/summary", getSummary);
 router.get("/:id/settlements", getSettlements);
+router.get("/:id/expenses", getExpenses);
 
 // logs
 router.get("/:id/logs", getLogs);
