@@ -1,12 +1,41 @@
 import { Group } from "../models/Groups.js";
-import { splitExpenseInt, computeBalances, computeSettlements } from "../services/compute.js";
+import { computeBalances, computeSettlements, splitExpenseInt } from "../services/compute.js";
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 
-/** POST /api/groups { name } */
+const SALT_ROUNDS = 10;
+
+/** POST /api/groups  { name, accessCode? } */
 export async function createGroup(req, res, next) {
   try {
-    const group = await Group.create({ name: req.body.name, members: [], expenses: [] });
+    const { name, accessCode } = req.body;
+    if (!name) return res.status(400).json({ error: "name is required" });
+
+    const accessHash = accessCode ? await bcrypt.hash(accessCode, SALT_ROUNDS) : null;
+    const group = await Group.create({ name, accessHash, members: [], expenses: [] });
     res.status(201).json(group);
+  } catch (e) {
+    next(e);
+  }
+}
+
+/** POST /api/groups/open  { name, accessCode? }  -> returns group if allowed */
+export async function openGroupByName(req, res, next) {
+  try {
+    const { name, accessCode } = req.body;
+    if (!name) return res.status(400).json({ error: "name is required" });
+
+    const group = await Group.findOne({ nameLower: name.toLowerCase() });
+    if (!group) return res.status(404).json({ error: "Group not found" });
+
+    // if protected, verify accessCode
+    if (group.accessHash) {
+      if (!accessCode) return res.status(401).json({ error: "Passphrase required" });
+      const ok = await bcrypt.compare(accessCode, group.accessHash);
+      if (!ok) return res.status(403).json({ error: "Invalid passphrase" });
+    }
+
+    res.json(group);
   } catch (e) {
     next(e);
   }
@@ -43,7 +72,6 @@ export async function addExpense(req, res, next) {
     const group = await Group.findById(req.params.id);
     if (!group) return res.status(404).json({ error: "Group not found" });
 
-    // basic checks: payer exists, participants belong to group
     const memberIds = new Set(group.members.map(m => String(m._id)));
     if (!memberIds.has(String(req.body.payerId)))
       return res.status(400).json({ error: "Invalid payerId" });
@@ -71,8 +99,6 @@ export async function addExpense(req, res, next) {
 }
 
 /** GET /api/groups/:id/summary -> balances & totals */
-// remove computePerExpenseShares + awaitImportCompute completely
-
 export async function getSummary(req, res, next) {
   try {
     const group = await Group.findById(req.params.id);
@@ -84,7 +110,6 @@ export async function getSummary(req, res, next) {
       members: group.members.length
     };
 
-    // derive paid & owed nicely for UI
     const paid = {};
     const owed = {};
     group.members.forEach(m => { paid[m._id] = 0; owed[m._id] = 0; });
@@ -93,9 +118,9 @@ export async function getSummary(req, res, next) {
       // who paid
       paid[String(e.payerId)] = (paid[String(e.payerId)] || 0) + e.amount;
 
-      // fair shares for participants
+      // per-expense fair shares
       if (e.participants?.length) {
-        const shares = splitExpenseInt(e.amount, e.participants); // << direct use
+        const shares = splitExpenseInt(e.amount, e.participants);
         e.participants.forEach((p, idx) => {
           owed[String(p.memberId)] = (owed[String(p.memberId)] || 0) + shares[idx];
         });
@@ -106,19 +131,6 @@ export async function getSummary(req, res, next) {
   } catch (e) {
     next(e);
   }
-}
-
-
-function computePerExpenseShares(expense) {
-  const { splitExpenseInt } = awaitImportCompute(); // lazy import for reuse
-  const participants = expense.participants;
-  return splitExpenseInt(expense.amount, participants);
-}
-
-async function awaitImportCompute() {
-  // dynamic import to avoid circular deps in some bundlers
-  const mod = await import("../services/compute.js");
-  return mod;
 }
 
 /** GET /api/groups/:id/settlements -> [{ from, to, amount }] */

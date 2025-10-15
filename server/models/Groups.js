@@ -10,7 +10,7 @@ const memberSchema = new mongoose.Schema(
 const expenseShareSchema = new mongoose.Schema(
   {
     memberId: { type: mongoose.Schema.Types.ObjectId, required: true },
-    shareRatio: { type: Number, default: 1 }, // weight for ratio split
+    shareRatio: { type: Number, default: 1 },
   },
   { _id: false }
 );
@@ -29,11 +29,19 @@ const expenseSchema = new mongoose.Schema(
 const groupSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
+    nameLower: { type: String, required: true, index: true }, // case-insensitive lookup
+    accessHash: { type: String, default: null }, // bcrypt hash of passphrase (nullable)
     members: { type: [memberSchema], default: [] },
     expenses: { type: [expenseSchema], default: [] },
     createdAt: { type: Date, default: Date.now }
   },
   { timestamps: true }
 );
+
+// keep nameLower in sync
+groupSchema.pre("validate", function(next) {
+  if (this.name) this.nameLower = this.name.toLowerCase();
+  next();
+});
 
 export const Group = mongoose.model("Group", groupSchema);
