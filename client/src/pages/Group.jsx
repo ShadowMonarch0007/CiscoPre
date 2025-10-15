@@ -30,7 +30,7 @@ export default function GroupPage() {
   const [inviteToken, setInviteToken] = useState("");
   const [loading, setLoading] = useState(true);
   const [expenses, setExpenses] = useState([]);
-
+  
   async function refresh() {
     setLoading(true);
     const g = await getGroup(id);
@@ -43,6 +43,8 @@ export default function GroupPage() {
     setLogs(lg.logs || []);
     const inv = await getInviteToken(id);
     setInviteToken(inv.token || "");
+    const ex = await getExpenses(id);
+    setExpenses(ex.expenses || []);
     setLoading(false);
   }
 
@@ -50,11 +52,6 @@ export default function GroupPage() {
     refresh();
   }, [id]);
 
-  useEffect(() => {
-    getExpenses(id)
-      .then((data) => setExpenses(data.expenses || []))
-      .catch(console.error);
-  }, [id]);
 
   async function handleAddMember(name) {
     await addMember(id, name);
