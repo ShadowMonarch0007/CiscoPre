@@ -2,21 +2,25 @@ const BASE = import.meta.env.VITE_API_BASE || "http://localhost:4000";
 
 async function http(path, opts = {}) {
   const res = await fetch(BASE + path, {
-    headers: { "Content-Type": "application/json", ...(opts.headers||{}) },
-    ...opts,
+    headers: { "Content-Type": "application/json", ...(opts.headers || {}) },
+    ...opts
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
   return res.json();
 }
 
-// new/updated
+// create/open by name + passphrase
 export const createGroup = (name, accessCode) =>
   http("/api/groups", { method: "POST", body: JSON.stringify({ name, accessCode }) });
 
 export const openGroup = (name, accessCode) =>
   http("/api/groups/open", { method: "POST", body: JSON.stringify({ name, accessCode }) });
 
-// existing
+// invite flows
+export const openByInvite = (token) => http(`/api/groups/open-link/${token}`);
+export const getInviteToken = (id) => http(`/api/groups/${id}/invite`);
+
+// core
 export const getGroup = (id) => http(`/api/groups/${id}`);
 export const addMember = (id, name) =>
   http(`/api/groups/${id}/members`, { method: "POST", body: JSON.stringify({ name }) });

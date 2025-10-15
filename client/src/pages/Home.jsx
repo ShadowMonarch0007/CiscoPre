@@ -1,14 +1,30 @@
-import { useState } from "react";
-import { createGroup, openGroup } from "../api/client";
+import { useEffect, useState } from "react";
+import { createGroup, openGroup, openByInvite } from "../api/client";
 
 export default function Home({ onEnterGroup }) {
   // create flow
   const [name, setName] = useState("Trip to Goa");
   const [createPass, setCreatePass] = useState(""); // optional
 
-  // open flow
+  // open by name+pass
   const [openName, setOpenName] = useState("");
   const [openPass, setOpenPass] = useState("");
+
+  // open by invite token
+  const [inviteToken, setInviteToken] = useState("");
+
+  // Auto-join if URL has ?invite=TOKEN
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("invite");
+    if (token) {
+      openByInvite(token)
+        .then((g) => onEnterGroup(g._id))
+        .catch(() => {
+          // ignore error; keep page visible
+        });
+    }
+  }, [onEnterGroup]);
 
   async function handleCreate(e) {
     e.preventDefault();
@@ -16,15 +32,23 @@ export default function Home({ onEnterGroup }) {
     onEnterGroup(group._id);
   }
 
-  async function handleOpen(e) {
+  async function handleOpenByName(e) {
     e.preventDefault();
     if (!openName.trim()) return;
     const group = await openGroup(openName.trim(), openPass || undefined);
     onEnterGroup(group._id);
   }
 
+  async function handleOpenByInvite(e) {
+    e.preventDefault();
+    if (!inviteToken.trim()) return;
+    const group = await openByInvite(inviteToken.trim());
+    onEnterGroup(group._id);
+  }
+
   return (
     <div className="grid-2">
+      {/* Create */}
       <form onSubmit={handleCreate} className="card space-y-3">
         <div className="label">Create a new group</div>
         <input
@@ -43,31 +67,48 @@ export default function Home({ onEnterGroup }) {
           Create group
         </button>
         <div className="text-xs text-neutral-500">
-          Tip: Add a passphrase if you want only invited folks to open this group.
+          You can protect a group with a simple passphrase.
         </div>
       </form>
 
-      <form onSubmit={handleOpen} className="card space-y-3">
-        <div className="label">Open existing group by name</div>
-        <input
-          className="input w-full"
-          value={openName}
-          onChange={(e) => setOpenName(e.target.value)}
-          placeholder="Group name"
-        />
-        <input
-          className="input w-full"
-          value={openPass}
-          onChange={(e) => setOpenPass(e.target.value)}
-          placeholder="Passphrase (if set)"
-        />
-        <button className="btn btn-secondary" type="submit">
-          Open
-        </button>
-        <div className="text-xs text-neutral-500">
-          Case-insensitive name. If group has a passphrase, you must enter it.
-        </div>
-      </form>
+      <div className="space-y-4">
+        {/* Open by name */}
+        <form onSubmit={handleOpenByName} className="card space-y-3">
+          <div className="label">Open existing group (Name + Passphrase)</div>
+          <input
+            className="input w-full"
+            value={openName}
+            onChange={(e) => setOpenName(e.target.value)}
+            placeholder="Group name"
+          />
+          <input
+            className="input w-full"
+            value={openPass}
+            onChange={(e) => setOpenPass(e.target.value)}
+            placeholder="Passphrase (if set)"
+          />
+          <button className="btn btn-secondary" type="submit">
+            Open
+          </button>
+        </form>
+
+        {/* Open by invite token */}
+        <form onSubmit={handleOpenByInvite} className="card space-y-3">
+          <div className="label">Join via invite token</div>
+          <input
+            className="input w-full"
+            value={inviteToken}
+            onChange={(e) => setInviteToken(e.target.value)}
+            placeholder="Paste token (e.g. AB23CD45)"
+          />
+          <button className="btn btn-secondary" type="submit">
+            Join
+          </button>
+          <div className="text-xs text-neutral-500">
+            Or just open the link someone shared with <code>?invite=TOKEN</code>.
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

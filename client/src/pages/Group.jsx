@@ -7,6 +7,7 @@ import {
   getSettlements,
   getLogs,
   getExpenses,
+  getInviteToken
 } from "../api/client";
 import MembersCard from "../components/MembersCard.jsx";
 import AddMemberForm from "../components/AddMemberForm.jsx";
@@ -15,15 +16,16 @@ import SummaryCard from "../components/SummaryCard.jsx";
 import SettlementsCard from "../components/SettlementsCard.jsx";
 import LogsCard from "../components/LogsCard.jsx";
 import ExpensesCard from "../components/ExpensesCard.jsx";
+import CopyField from "../components/CopyField.jsx";
 
 export default function Group({ groupId, onBack }) {
   const [group, setGroup] = useState(null);
   const [summary, setSummary] = useState(null);
   const [settlements, setSettlements] = useState([]);
   const [logs, setLogs] = useState([]);
+  const [inviteToken, setInviteToken] = useState("");
   const [loading, setLoading] = useState(true);
   const [expenses, setExpenses] = useState([]);
-
   async function refresh() {
     setLoading(true);
     const g = await getGroup(groupId);
@@ -34,6 +36,8 @@ export default function Group({ groupId, onBack }) {
     setSettlements(st.settlements || []);
     const lg = await getLogs(groupId);
     setLogs(lg.logs || []);
+    const inv = await getInviteToken(groupId);
+    setInviteToken(inv.token || "");
     setLoading(false);
   }
 
@@ -46,7 +50,6 @@ export default function Group({ groupId, onBack }) {
       .then((data) => setExpenses(data.expenses || []))
       .catch(console.error);
   }, [groupId]);
-
 
   async function handleAddMember(name) {
     await addMember(groupId, name);
@@ -64,12 +67,14 @@ export default function Group({ groupId, onBack }) {
     return m;
   }, [group]);
 
+  const inviteURL =
+    (typeof window !== "undefined" ? window.location.origin : "") +
+    `/?invite=${inviteToken}`;
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-neutral-600">
-          Group ID: <code>{groupId}</code>
-        </div>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <CopyField label="Invite link" value={inviteURL} />
         <button className="btn btn-secondary" onClick={onBack}>
           ← Back
         </button>

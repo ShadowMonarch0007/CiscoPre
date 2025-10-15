@@ -2,8 +2,10 @@ import { Group } from "../models/Groups.js";
 import { computeBalances, computeSettlements, splitExpenseInt } from "../services/compute.js";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import { customAlphabet } from "nanoid";
 
 const SALT_ROUNDS = 10;
+const nano = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 10); // no confusing chars (O/0, I/1)
 
 /** POST /api/groups  { name, accessCode? } */
 export async function createGroup(req, res, next) {
@@ -13,19 +15,26 @@ export async function createGroup(req, res, next) {
 
     const accessHash = accessCode ? await bcrypt.hash(accessCode, SALT_ROUNDS) : null;
 
+    // generate unique invite token
+    let token = nano();
+    // basic collision loop (rare)
+    while (await Group.findOne({ inviteToken: token })) token = nano();
+
     const group = await Group.create({
       name,
       accessHash,
+      inviteToken: token,
       members: [],
       expenses: [],
       logs: []
     });
 
-    // log creation
+    // logs
+    group.logs.push({ type: "group_created", message: `Group "${group.name}" created`, meta: null });
     group.logs.push({
-      type: "group_created",
-      message: `Group "${group.name}" created`,
-      meta: null
+      type: "invite_token_generated",
+      message: `Invite token generated`,
+      meta: { inviteToken: token }
     });
     await group.save();
 
@@ -56,6 +65,29 @@ export async function openGroupByName(req, res, next) {
   }
 }
 
+/** GET /api/groups/open-link/:token  -> open by invite token (bypasses passphrase) */
+export async function openGroupByInviteToken(req, res, next) {
+  try {
+    const { token } = req.params;
+    const group = await Group.findOne({ inviteToken: token });
+    if (!group) return res.status(404).json({ error: "Invalid invite token" });
+    res.json(group);
+  } catch (e) {
+    next(e);
+  }
+}
+
+/** GET /api/groups/:id/invite -> { token } */
+export async function getInviteToken(req, res, next) {
+  try {
+    const group = await Group.findById(req.params.id);
+    if (!group) return res.status(404).json({ error: "Group not found" });
+    res.json({ token: group.inviteToken });
+  } catch (e) {
+    next(e);
+  }
+}
+
 /** GET /api/groups/:id */
 export async function getGroup(req, res, next) {
   try {
@@ -76,7 +108,6 @@ export async function addMember(req, res, next) {
     group.members.push({ name: req.body.name });
     const newMember = group.members.at(-1);
 
-    // log
     group.logs.push({
       type: "member_added",
       message: `Added member "${req.body.name}"`,
@@ -116,7 +147,6 @@ export async function addExpense(req, res, next) {
     });
     const exp = group.expenses.at(-1);
 
-    // log
     const payerName =
       group.members.find((m) => String(m._id) === String(req.body.payerId))?.name || "Unknown";
     group.logs.push({
@@ -175,16 +205,6 @@ export async function getSummary(req, res, next) {
   }
 }
 
-export async function getExpenses(req, res, next) {
-  try {
-    const group = await Group.findById(req.params.id);
-    if (!group) return res.status(404).json({ error: "Group not found" });
-    res.json({ expenses: group.expenses });
-  } catch (e) {
-    next(e);
-  }
-}
-
 /** GET /api/groups/:id/settlements */
 export async function getSettlements(req, res, next) {
   try {
@@ -194,6 +214,16 @@ export async function getSettlements(req, res, next) {
     const balances = computeBalances(group);
     const settlements = computeSettlements(balances);
     res.json({ settlements });
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function getExpenses(req, res, next) {
+  try {
+    const group = await Group.findById(req.params.id);
+    if (!group) return res.status(404).json({ error: "Group not found" });
+    res.json({ expenses: group.expenses });
   } catch (e) {
     next(e);
   }

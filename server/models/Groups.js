@@ -27,7 +27,7 @@ const expenseSchema = new mongoose.Schema(
 // Transaction logs
 const logSchema = new mongoose.Schema(
   {
-    type: { type: String, required: true }, // 'group_created' | 'member_added' | 'expense_added' | ...
+    type: { type: String, required: true }, // 'group_created' | 'member_added' | 'expense_added' | 'invite_token_generated' | ...
     message: { type: String, required: true },
     meta: { type: mongoose.Schema.Types.Mixed, default: null },
     createdAt: { type: Date, default: Date.now }
@@ -38,8 +38,9 @@ const logSchema = new mongoose.Schema(
 const groupSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
-    nameLower: { type: String, required: true, index: true }, // for case-insensitive open-by-name
+    nameLower: { type: String, required: true, index: true },
     accessHash: { type: String, default: null }, // bcrypt of passphrase (nullable)
+    inviteToken: { type: String, required: true, unique: true }, // NEW
     members: { type: [memberSchema], default: [] },
     expenses: { type: [expenseSchema], default: [] },
     logs: { type: [logSchema], default: [] },

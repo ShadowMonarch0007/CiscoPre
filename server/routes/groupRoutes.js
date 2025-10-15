@@ -4,13 +4,15 @@ import { validate } from "../middleware/validate.js";
 import {
   createGroup,
   openGroupByName,
+  openGroupByInviteToken,
+  getInviteToken,
   getGroup,
   addMember,
   addExpense,
   getSummary,
   getSettlements,
-  getLogs,
-  getExpenses
+  getExpenses,
+  getLogs
 } from "../controllers/groupControllers.js";
 
 const router = Router();
@@ -54,14 +56,16 @@ const addExpenseSchema = z.object({
 router.post("/", validate(createGroupSchema), createGroup);
 router.post("/open", validate(openGroupSchema), openGroupByName);
 
+// invite routes
+router.get("/open-link/:token", openGroupByInviteToken);
+router.get("/:id/invite", getInviteToken);
+
 router.get("/:id", getGroup);
 router.post("/:id/members", validate(addMemberSchema), addMember);
 router.post("/:id/expenses", validate(addExpenseSchema), addExpense);
 router.get("/:id/summary", getSummary);
 router.get("/:id/settlements", getSettlements);
 router.get("/:id/expenses", getExpenses);
-
-// logs
 router.get("/:id/logs", getLogs);
 
 export default router;
