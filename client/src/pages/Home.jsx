@@ -1,49 +1,44 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { createGroup, openGroup, openByInvite } from "../api/client";
 
-export default function Home({ onEnterGroup }) {
-  // create flow
-  const [name, setName] = useState("Trip to Goa");
-  const [createPass, setCreatePass] = useState(""); // optional
+export default function Home() {
+  const navigate = useNavigate();
 
-  // open by name+pass
+  const [name, setName] = useState("Trip to Goa");
+  const [createPass, setCreatePass] = useState("");
   const [openName, setOpenName] = useState("");
   const [openPass, setOpenPass] = useState("");
-
-  // open by invite token
   const [inviteToken, setInviteToken] = useState("");
 
-  // Auto-join if URL has ?invite=TOKEN
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("invite");
     if (token) {
       openByInvite(token)
-        .then((g) => onEnterGroup(g._id))
-        .catch(() => {
-          // ignore error; keep page visible
-        });
+        .then((g) => navigate(`/group/${g._id}`))
+        .catch(() => {});
     }
-  }, [onEnterGroup]);
+  }, [navigate]);
 
   async function handleCreate(e) {
     e.preventDefault();
     const group = await createGroup(name, createPass || undefined);
-    onEnterGroup(group._id);
+    navigate(`/group/${group._id}`);
   }
 
   async function handleOpenByName(e) {
     e.preventDefault();
     if (!openName.trim()) return;
     const group = await openGroup(openName.trim(), openPass || undefined);
-    onEnterGroup(group._id);
+    navigate(`/group/${group._id}`);
   }
 
   async function handleOpenByInvite(e) {
     e.preventDefault();
     if (!inviteToken.trim()) return;
     const group = await openByInvite(inviteToken.trim());
-    onEnterGroup(group._id);
+    navigate(`/group/${group._id}`);
   }
 
   return (
@@ -66,9 +61,6 @@ export default function Home({ onEnterGroup }) {
         <button className="btn btn-primary" type="submit">
           Create group
         </button>
-        <div className="text-xs text-neutral-500">
-          You can protect a group with a simple passphrase.
-        </div>
       </form>
 
       <div className="space-y-4">
@@ -92,21 +84,18 @@ export default function Home({ onEnterGroup }) {
           </button>
         </form>
 
-        {/* Open by invite token */}
+        {/* Open by invite */}
         <form onSubmit={handleOpenByInvite} className="card space-y-3">
           <div className="label">Join via invite token</div>
           <input
             className="input w-full"
             value={inviteToken}
             onChange={(e) => setInviteToken(e.target.value)}
-            placeholder="Paste token (e.g. AB23CD45)"
+            placeholder="Paste invite token"
           />
           <button className="btn btn-secondary" type="submit">
             Join
           </button>
-          <div className="text-xs text-neutral-500">
-            Or just open the link someone shared with <code>?invite=TOKEN</code>.
-          </div>
         </form>
       </div>
     </div>

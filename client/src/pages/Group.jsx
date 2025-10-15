@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   getGroup,
   addMember,
@@ -7,7 +8,7 @@ import {
   getSettlements,
   getLogs,
   getExpenses,
-  getInviteToken
+  getInviteToken,
 } from "../api/client";
 import MembersCard from "../components/MembersCard.jsx";
 import AddMemberForm from "../components/AddMemberForm.jsx";
@@ -18,7 +19,10 @@ import LogsCard from "../components/LogsCard.jsx";
 import ExpensesCard from "../components/ExpensesCard.jsx";
 import CopyField from "../components/CopyField.jsx";
 
-export default function Group({ groupId, onBack }) {
+export default function GroupPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
   const [group, setGroup] = useState(null);
   const [summary, setSummary] = useState(null);
   const [settlements, setSettlements] = useState([]);
@@ -26,38 +30,39 @@ export default function Group({ groupId, onBack }) {
   const [inviteToken, setInviteToken] = useState("");
   const [loading, setLoading] = useState(true);
   const [expenses, setExpenses] = useState([]);
+
   async function refresh() {
     setLoading(true);
-    const g = await getGroup(groupId);
+    const g = await getGroup(id);
     setGroup(g);
-    const s = await getSummary(groupId);
+    const s = await getSummary(id);
     setSummary(s);
-    const st = await getSettlements(groupId);
+    const st = await getSettlements(id);
     setSettlements(st.settlements || []);
-    const lg = await getLogs(groupId);
+    const lg = await getLogs(id);
     setLogs(lg.logs || []);
-    const inv = await getInviteToken(groupId);
+    const inv = await getInviteToken(id);
     setInviteToken(inv.token || "");
     setLoading(false);
   }
 
   useEffect(() => {
     refresh();
-  }, [groupId]);
+  }, [id]);
 
   useEffect(() => {
-    getExpenses(groupId)
+    getExpenses(id)
       .then((data) => setExpenses(data.expenses || []))
       .catch(console.error);
-  }, [groupId]);
+  }, [id]);
 
   async function handleAddMember(name) {
-    await addMember(groupId, name);
+    await addMember(id, name);
     await refresh();
   }
 
   async function handleAddExpense(payload) {
-    await addExpense(groupId, payload);
+    await addExpense(id, payload);
     await refresh();
   }
 
@@ -75,8 +80,8 @@ export default function Group({ groupId, onBack }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <CopyField label="Invite link" value={inviteURL} />
-        <button className="btn btn-secondary" onClick={onBack}>
-          ← Back
+        <button className="btn btn-secondary" onClick={() => navigate("/")}>
+          ← Home
         </button>
       </div>
 
