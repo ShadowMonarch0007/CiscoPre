@@ -1,5 +1,5 @@
-import { Group } from "../models/Group.js";
-import { computeBalances, computeSettlements } from "../services/compute.js";
+import { Group } from "../models/Groups.js";
+import { splitExpenseInt, computeBalances, computeSettlements } from "../services/compute.js";
 import mongoose from "mongoose";
 
 /** POST /api/groups { name } */
@@ -71,6 +71,8 @@ export async function addExpense(req, res, next) {
 }
 
 /** GET /api/groups/:id/summary -> balances & totals */
+// remove computePerExpenseShares + awaitImportCompute completely
+
 export async function getSummary(req, res, next) {
   try {
     const group = await Group.findById(req.params.id);
@@ -82,20 +84,22 @@ export async function getSummary(req, res, next) {
       members: group.members.length
     };
 
-    // also return per-member paid and owed (derived) for UI niceness
+    // derive paid & owed nicely for UI
     const paid = {};
     const owed = {};
     group.members.forEach(m => { paid[m._id] = 0; owed[m._id] = 0; });
 
     for (const e of group.expenses) {
-      paid[String(e.payerId)] += e.amount;
-      // recompute fair shares just for per-expense owed
-      const shares = e.participants.length
-        ? computePerExpenseShares(e)
-        : [];
-      e.participants.forEach((p, idx) => {
-        owed[String(p.memberId)] += shares[idx];
-      });
+      // who paid
+      paid[String(e.payerId)] = (paid[String(e.payerId)] || 0) + e.amount;
+
+      // fair shares for participants
+      if (e.participants?.length) {
+        const shares = splitExpenseInt(e.amount, e.participants); // << direct use
+        e.participants.forEach((p, idx) => {
+          owed[String(p.memberId)] = (owed[String(p.memberId)] || 0) + shares[idx];
+        });
+      }
     }
 
     res.json({ members: group.members, balances, paid, owed, totals });
@@ -103,6 +107,7 @@ export async function getSummary(req, res, next) {
     next(e);
   }
 }
+
 
 function computePerExpenseShares(expense) {
   const { splitExpenseInt } = awaitImportCompute(); // lazy import for reuse

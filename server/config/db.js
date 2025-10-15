@@ -1,9 +1,8 @@
-import mongoose from "mongoose";
+import mongoose from "mongoose"; 
 
-export async function connectDB() {
-  const uri = process.env.MONGODB_URI;
-  if (!uri) throw new Error("MONGODB_URI missing in .env");
-  mongoose.set("strictQuery", true);
-  await mongoose.connect(uri, { dbName: uri.split("/").pop() });
-  console.log("MongoDB connected");
+export async function connectDB(params) {
+    mongoose.connection.on('connected',()=>{
+        console.log("DB Connected")
+    })
+    await mongoose.connect(`${process.env.MONGODB_URI}/Cisco`)
 }

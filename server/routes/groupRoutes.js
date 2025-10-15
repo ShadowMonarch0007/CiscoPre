@@ -6,7 +6,7 @@ import {
   addExpense,
   getSummary,
   getSettlements
-} from "../controllers/group.controller.js";
+} from "../controllers/groupControllers.js";
 
 import { z } from "zod";
 import { validate } from "../middleware/validate.js";
